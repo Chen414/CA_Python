@@ -2,12 +2,17 @@
 陈伟霖
 2022年7月4日
 该代码是实现论文中对单射规则的判断
+实现了规则长度接口，可以直接修改length_rude的值实现对不同长度规则进行计算
 目前没有实现图形化功能
 '''
 # 全局规则函数，例如:'0000':'0'
+from ftplib import all_errors
+import time
 from ast import For, Or
+from operator import length_hint
 from turtle import Turtle, update
-
+# 规则长度
+length_rude = 3
 rude = {}
 # 对规则进行分类
 class_rude = {}
@@ -21,14 +26,14 @@ Fork_box = {}
 
 #规则初始化函数
 def get_rude(simplify_rude):
-    global rude,class_rude
+    global rude,class_rude,length_rude
     #字符串反转
     simplify_rude = simplify_rude[::-1]
     # 用于判断是否平衡
     num_one = 0
-    for i in range(0,16):
+    for i in range(0,2**length_rude):
         num = bin(i)[2:]
-        num = num.zfill(4)
+        num = num.zfill(length_rude)
         rude[num] = simplify_rude[i]
         if simplify_rude[i] == '1':
             num_one = num_one + 1
@@ -36,15 +41,15 @@ def get_rude(simplify_rude):
             class_rude[simplify_rude[i]] = [i]
         else:
             class_rude[simplify_rude[i]].append(i)
-    if num_one != 8:
+    if num_one != (2**length_rude)/2:
         return -1
     return get_box()
 # 构造后续序列，这里可以判断是否单射，所以需要返回值
 def get_sequent(a,b):
-    global Ordinary_box,Circle_box,Fork_box,rude
+    global Ordinary_box,Circle_box,Fork_box,rude,length_rude
     # 首先判断后三位是否相同，如果相同则有可能进去 “圈叉”
-    bin_a = bin(a)[2:].zfill(4)
-    bin_b = bin(b)[2:].zfill(4)
+    bin_a = bin(a)[2:].zfill(length_rude)
+    bin_b = bin(b)[2:].zfill(length_rude)
     if bin_a[1:] == bin_b[1:]:
         temp = bin_a[1:]
         if rude[temp + '0'] == rude[temp + '1']:
@@ -186,16 +191,16 @@ def get_weight(weights):
         return -1
 # 最后一个判断点，同样需要返回参数
 def final_decide():
-    global Ordinary_box,Circle_box
+    global Ordinary_box,Circle_box,length_rude
     Combinations = list(Ordinary_box.keys())
     Combinations.extend(list(Circle_box.keys()))
     for Combination in Combinations:
         key = str(Combination)
         a = int(key.split('-')[0])
         b = int(key.split('-')[1])
-        bin_a = bin(a)[2:].zfill(4)
-        bin_b = bin(b)[2:].zfill(4)
-        if bin_a[:3] == bin_b[:3]:
+        bin_a = bin(a)[2:].zfill(length_rude)
+        bin_b = bin(b)[2:].zfill(length_rude)
+        if bin_a[:length_rude-1] == bin_b[:length_rude-1]:
             return -1
     return 1
         
@@ -211,9 +216,12 @@ if __name__ == '__main__':
     # --------------------------------------------------------------------------------
     # 跑规则长度为4
     save_txt = []
-    for i in range(0,65536):
+    time_start = time.time()
+    all_nums = 2**(2**length_rude)
+    length_num = 2**length_rude
+    for i in range(0,all_nums):
         num = bin(i)[2:]
-        num = num.zfill(16)
+        num = num.zfill(length_num)
         # 参数清空
         rude.clear()
         class_rude.clear()
@@ -226,11 +234,13 @@ if __name__ == '__main__':
         if get_weight({'@':0}) == -1 or final_decide() == -1:
             continue
         save_txt.append(num)
-        
+    time_end = time.time()
     # 输出到txt文件中
-    with open('65536_result_Injectivity.txt', 'w') as f:
+    with open( str(all_nums) + '_result_Injectivity_paper.txt', 'w') as f:
         for key in save_txt:
             f.write(key)
             f.write(' 是满足单射的')
             f.write('\n')
+        f.write("总计" + str(len(save_txt)) + '条规则\n')
+        f.write('程序运行的时间为：' + str(time_end-time_start) + 's')
 
